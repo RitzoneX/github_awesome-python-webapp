@@ -39,6 +39,7 @@ class Html(object):
         self.url = url
         response = urllib2.urlopen(url)
         self.html = response.read().replace('="/', '="https://github.com/')
+        self.main_path = re.compile(r'[^/]*').sub(r'..', path(self.url)) + '/'
 
     def down(self):
         """ 下载url页面"""
@@ -64,8 +65,7 @@ class Html(object):
 
     def relative_path(self, url):
         """比较url返回相对路径"""
-        main_path = re.compile(r'[^/]*').sub(r'..', path(self.url))
-        return main_path + '/' + filename(url)
+        return self.main_path + filename(url)
 
     def findurls(self):
         """查找所有的url资源"""
@@ -92,6 +92,8 @@ class Html(object):
     def down_html(self):
         """下载Html页面文件"""
         makedirs(self.url)
+        self.html = re.compile(r'href="https://(.*?)"').sub(
+            r'href="%s\1.html"' % self.main_path, self.html)
         with open(htmlname(self.url), 'wb') as f:
             f.write(self.html)
 
@@ -101,7 +103,6 @@ def down(url):
     for x in branches_url(h.html):
         if not os.path.exists(htmlname(x)):
             threading.Thread(target=Html(x).down).start()
-            # Html(x).down()
     h.down()
 
 
